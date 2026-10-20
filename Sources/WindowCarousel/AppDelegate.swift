@@ -8,6 +8,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private let chain = WindowChain()
     private var hotkey: Hotkey?
     private var fullWidthHotkey: Hotkey?
+    private var moveLeftHotkey: Hotkey?
+    private var moveRightHotkey: Hotkey?
     private var threeFingerScroll: ThreeFingerScroll?
     private let chainSeparator = NSMenuItem.separator()
     private var chainItems: [NSMenuItem] = []
@@ -55,6 +57,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         fullWidthHotkey = Hotkey(keyCode: kVK_ANSI_F, modifiers: controlKey | optionKey) { [weak self] in
             self?.toggleFullWidthOfFocusedWindow()
         }
+        moveLeftHotkey = Hotkey(keyCode: kVK_LeftArrow, modifiers: controlKey | optionKey) { [weak self] in
+            self?.moveFocusedWindow(by: -1)
+        }
+        moveRightHotkey = Hotkey(keyCode: kVK_RightArrow, modifiers: controlKey | optionKey) { [weak self] in
+            self?.moveFocusedWindow(by: 1)
+        }
         threeFingerScroll = ThreeFingerScroll(chain: chain)
 
         Accessibility.promptIfNeeded()
@@ -88,6 +96,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private func toggleFullWidthOfFocusedWindow() {
         guard let window = Accessibility.focusedWindow(), let area = Screen.usableArea() else { return }
         chain.toggleFullWidth(window, in: area)
+    }
+
+    private func moveFocusedWindow(by step: Int) {
+        guard let window = Accessibility.focusedWindow(), let area = Screen.usableArea() else { return }
+        chain.move(window, by: step, in: area)
     }
 
     @objc private func openAccessibilitySettings() {
