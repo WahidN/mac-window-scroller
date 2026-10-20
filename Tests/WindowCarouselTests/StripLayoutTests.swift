@@ -90,4 +90,31 @@ struct StripLayoutTests {
 
         #expect(StripLayout.parked(partly, in: view) == partly)
     }
+
+    @Test func narrowWindowBecomesFullWidth() {
+        #expect(StripLayout.fullWidthToggled(current: half, remembered: nil, viewWidth: view.width) == view.width)
+    }
+
+    @Test func narrowWindowBecomesFullWidthEvenWithARememberedWidth() {
+        #expect(StripLayout.fullWidthToggled(current: 600, remembered: half, viewWidth: view.width) == view.width)
+    }
+
+    @Test func fullWidthWindowGetsItsRememberedWidthBack() {
+        #expect(StripLayout.fullWidthToggled(current: view.width, remembered: 500, viewWidth: view.width) == 500)
+    }
+
+    @Test func fullWidthWindowWithoutARememberedWidthGetsTheNewWindowWidth() {
+        #expect(StripLayout.fullWidthToggled(current: view.width - 1, remembered: nil, viewWidth: view.width) == half)
+    }
+
+    @Test func fullWidthWindowFillsTheViewAndPushesItsNeighboursOut() {
+        let widths = [half, view.width, half]
+        let offset = StripLayout.offset(revealing: 1, widths: widths, viewWidth: view.width, current: 0)
+        let frames = StripLayout.frames(widths: widths, in: view, offset: offset)
+
+        #expect(frames[1].minX == view.minX)
+        #expect(frames[1].maxX == view.maxX)
+        #expect(StripLayout.parked(frames[0], in: view).maxX == view.minX - StripLayout.gap)
+        #expect(StripLayout.parked(frames[2], in: view).minX == view.maxX + StripLayout.gap)
+    }
 }

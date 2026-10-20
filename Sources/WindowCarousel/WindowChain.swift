@@ -72,6 +72,7 @@ final class WindowChain {
     private var laidOutWindows: [ChainWindow] = []
     private var laidOutWidths: [CGFloat] = []
     private var laidOutView: CGRect = .zero
+    private var widthsBeforeFullWidth: [AXUIElement: CGFloat] = [:]
     private var applyScheduled = false
     private let focusBorder = FocusBorder()
     private let miniMap = MiniMap()
@@ -107,10 +108,34 @@ final class WindowChain {
             window.setSize(CGSize(width: width, height: view.height))
         }
 
+        place(placed, in: view, revealing: revealingNewest ? placed.count - 1 : nil)
+    }
+
+    func toggleFullWidth(_ window: ChainWindow, in area: CGRect) {
+        removeClosed()
+        let placed = windows.filter { !$0.isMinimizedOrFullScreen }
+        guard let index = placed.firstIndex(where: { CFEqual($0.element, window.element) }),
+              let current = window.size?.width
+        else { return }
+
+        let view = StripLayout.view(in: area)
+        let width = StripLayout.fullWidthToggled(
+            current: current,
+            remembered: widthsBeforeFullWidth[window.element],
+            viewWidth: view.width
+        )
+        widthsBeforeFullWidth[window.element] = width == view.width ? current : nil
+        // macOS kapt een resize af op de schermrand, dus eerst naar links verplaatsen
+        window.setPosition(view.origin)
+        window.setSize(CGSize(width: width, height: view.height))
+        place(placed, in: view, revealing: index)
+    }
+
+    private func place(_ placed: [ChainWindow], in view: CGRect, revealing index: Int?) {
+        let newWidth = StripLayout.newWindowWidth(viewWidth: view.width)
         let widths = placed.map { $0.size?.width ?? newWidth }
-        offset = revealingNewest
-            ? StripLayout.offset(revealing: widths.count - 1, widths: widths, viewWidth: view.width, current: offset)
-            : StripLayout.clamped(offset, widths: widths, viewWidth: view.width)
+        offset = index.map { StripLayout.offset(revealing: $0, widths: widths, viewWidth: view.width, current: offset) }
+            ?? StripLayout.clamped(offset, widths: widths, viewWidth: view.width)
 
         for (window, frame) in zip(placed, StripLayout.frames(widths: widths, in: view, offset: offset)) {
             let target = StripLayout.parked(frame, in: view)

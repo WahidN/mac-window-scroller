@@ -12,6 +12,11 @@ enum StripLayout {
         (viewWidth - gap) / 2
     }
 
+    static func fullWidthToggled(current: CGFloat, remembered: CGFloat?, viewWidth: CGFloat) -> CGFloat {
+        guard abs(current - viewWidth) <= 1 else { return viewWidth }
+        return remembered ?? newWindowWidth(viewWidth: viewWidth)
+    }
+
     static func frames(widths: [CGFloat], in view: CGRect, offset: CGFloat) -> [CGRect] {
         var x = view.minX - offset
         return widths.map { width in

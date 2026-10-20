@@ -7,6 +7,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
     private let chain = WindowChain()
     private var hotkey: Hotkey?
+    private var fullWidthHotkey: Hotkey?
     private var threeFingerScroll: ThreeFingerScroll?
     private let chainSeparator = NSMenuItem.separator()
     private var chainItems: [NSMenuItem] = []
@@ -47,6 +48,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         hotkey = Hotkey(keyCode: kVK_ANSI_C, modifiers: controlKey | optionKey) { [weak self] in
             self?.toggleFocusedWindow()
         }
+        fullWidthHotkey = Hotkey(keyCode: kVK_ANSI_F, modifiers: controlKey | optionKey) { [weak self] in
+            self?.toggleFullWidthOfFocusedWindow()
+        }
         threeFingerScroll = ThreeFingerScroll(chain: chain)
 
         Accessibility.promptIfNeeded()
@@ -75,6 +79,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let added = chain.toggle(window)
         guard let area = Screen.usableArea() else { return }
         chain.arrange(in: area, revealingNewest: added)
+    }
+
+    private func toggleFullWidthOfFocusedWindow() {
+        guard let window = Accessibility.focusedWindow(), let area = Screen.usableArea() else { return }
+        chain.toggleFullWidth(window, in: area)
     }
 
     @objc private func openAccessibilitySettings() {
