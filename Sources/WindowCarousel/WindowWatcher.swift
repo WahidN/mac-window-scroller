@@ -1,24 +1,32 @@
 import ApplicationServices
 
 @MainActor
-final class ResizeWatcher {
+final class WindowWatcher {
+    private static let notifications = [kAXResizedNotification, kAXUIElementDestroyedNotification]
+
     private let onResize: (AXUIElement) -> Void
+    private let onClose: () -> Void
     private var observers: [pid_t: AXObserver] = [:]
 
-    init(onResize: @escaping (AXUIElement) -> Void) {
+    init(onResize: @escaping (AXUIElement) -> Void, onClose: @escaping () -> Void) {
         self.onResize = onResize
+        self.onClose = onClose
     }
 
     func watch(_ window: ChainWindow) {
         guard let pid = window.pid, let observer = observer(for: pid) else { return }
-        AXObserverAddNotification(
-            observer, window.element, kAXResizedNotification as CFString, Unmanaged.passUnretained(self).toOpaque()
-        )
+        for notification in Self.notifications {
+            AXObserverAddNotification(
+                observer, window.element, notification as CFString, Unmanaged.passUnretained(self).toOpaque()
+            )
+        }
     }
 
     func unwatch(_ window: ChainWindow) {
         guard let pid = window.pid, let observer = observers[pid] else { return }
-        AXObserverRemoveNotification(observer, window.element, kAXResizedNotification as CFString)
+        for notification in Self.notifications {
+            AXObserverRemoveNotification(observer, window.element, notification as CFString)
+        }
     }
 
     func keepObservers(for windows: [ChainWindow]) {
@@ -32,10 +40,12 @@ final class ResizeWatcher {
     private func observer(for pid: pid_t) -> AXObserver? {
         if let observer = observers[pid] { return observer }
         var created: AXObserver?
-        let status = AXObserverCreate(pid, { _, element, _, refcon in
+        let status = AXObserverCreate(pid, { _, element, notification, refcon in
             guard let refcon else { return }
+            let isClose = notification as String == kAXUIElementDestroyedNotification
             MainActor.assumeIsolated {
-                Unmanaged<ResizeWatcher>.fromOpaque(refcon).takeUnretainedValue().onResize(element)
+                let watcher = Unmanaged<WindowWatcher>.fromOpaque(refcon).takeUnretainedValue()
+                isClose ? watcher.onClose() : watcher.onResize(element)
             }
         }, &created)
         guard status == .success, let created else { return nil }
