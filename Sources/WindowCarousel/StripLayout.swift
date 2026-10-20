@@ -49,6 +49,11 @@ enum StripLayout {
         return current
     }
 
+    static func offset(keeping index: Int, atX x: CGFloat, widths: [CGFloat], in view: CGRect) -> CGFloat {
+        let left = widths[..<index].reduce(0, +) + gap * CGFloat(index)
+        return view.minX + left - x
+    }
+
     static func clamped(_ offset: CGFloat, widths: [CGFloat], viewWidth: CGFloat) -> CGFloat {
         let stripWidth = widths.reduce(0, +) + gap * CGFloat(max(widths.count - 1, 0))
         return max(0, min(offset, stripWidth - viewWidth))

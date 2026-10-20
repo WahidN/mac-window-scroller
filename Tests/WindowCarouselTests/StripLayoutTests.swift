@@ -117,4 +117,26 @@ struct StripLayoutTests {
         #expect(StripLayout.parked(frames[0], in: view).maxX == view.minX - StripLayout.gap)
         #expect(StripLayout.parked(frames[2], in: view).minX == view.maxX + StripLayout.gap)
     }
+
+    @Test func rightEdgeDragPushesTheWindowsOnTheRight() {
+        let before = StripLayout.frames(widths: [half, half, half], in: view, offset: 400)
+        let widths = [half, half + 200, half]
+        let offset = StripLayout.offset(keeping: 1, atX: before[1].minX, widths: widths, in: view)
+        let after = StripLayout.frames(widths: widths, in: view, offset: offset)
+
+        #expect(after[0] == before[0])
+        #expect(after[1].minX == before[1].minX)
+        #expect(after[2].minX == before[2].minX + 200)
+    }
+
+    @Test func leftEdgeDragPushesTheWindowsOnTheLeft() {
+        let before = StripLayout.frames(widths: [half, half, half], in: view, offset: 400)
+        let widths = [half, half + 200, half]
+        let offset = StripLayout.offset(keeping: 1, atX: before[1].minX - 200, widths: widths, in: view)
+        let after = StripLayout.frames(widths: widths, in: view, offset: offset)
+
+        #expect(after[0].minX == before[0].minX - 200)
+        #expect(after[1].maxX == before[1].maxX)
+        #expect(after[2] == before[2])
+    }
 }

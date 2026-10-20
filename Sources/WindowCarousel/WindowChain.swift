@@ -28,6 +28,16 @@ struct ChainWindow {
         return size
     }
 
+    var position: CGPoint? {
+        var value: CFTypeRef?
+        guard AXUIElementCopyAttributeValue(element, kAXPositionAttribute as CFString, &value) == .success,
+              let value
+        else { return nil }
+        var position = CGPoint.zero
+        AXValueGetValue(value as! AXValue, .cgPoint, &position)
+        return position
+    }
+
     func setSize(_ size: CGSize) {
         var size = size
         guard let value = AXValueCreate(.cgSize, &size) else { return }
@@ -77,18 +87,40 @@ final class WindowChain {
     private let focusBorder = FocusBorder()
     private let miniMap = MiniMap()
     private var borderedWindow: ChainWindow?
+    private lazy var resizeWatcher = ResizeWatcher { [weak self] element in
+        self?.windowResized(element)
+    }
 
     func toggle(_ window: ChainWindow) -> Bool {
         if let index = windows.firstIndex(where: { CFEqual($0.element, window.element) }) {
-            windows.remove(at: index)
+            resizeWatcher.unwatch(windows.remove(at: index))
+            resizeWatcher.keepObservers(for: windows)
             return false
         }
         windows.append(window)
+        resizeWatcher.watch(window)
         return true
+    }
+
+    private func windowResized(_ element: AXUIElement) {
+        guard let index = laidOutWindows.firstIndex(where: { CFEqual($0.element, element) }),
+              let width = laidOutWindows[index].size?.width,
+              let x = laidOutWindows[index].position?.x,
+              abs(width - laidOutWidths[index]) > 1
+        else { return }
+
+        laidOutWidths[index] = width
+        offset = StripLayout.offset(keeping: index, atX: x, widths: laidOutWidths, in: laidOutView)
+        let frames = StripLayout.frames(widths: laidOutWidths, in: laidOutView, offset: offset)
+        for (other, (window, frame)) in zip(laidOutWindows, frames).enumerated() where other != index {
+            window.setPosition(StripLayout.parked(frame, in: laidOutView).origin)
+        }
+        refreshBorder()
     }
 
     func removeClosed() {
         windows.removeAll { $0.isClosed }
+        resizeWatcher.keepObservers(for: windows)
     }
 
     func arrange(in area: CGRect, revealingNewest: Bool) {
