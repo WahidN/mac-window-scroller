@@ -1,7 +1,7 @@
 import ApplicationServices
 
 @MainActor
-final class ResizeWatcher {
+final class WindowWatcher {
     private let onResize: (AXUIElement) -> Void
     private var observers: [pid_t: AXObserver] = [:]
 
@@ -35,7 +35,7 @@ final class ResizeWatcher {
         let status = AXObserverCreate(pid, { _, element, _, refcon in
             guard let refcon else { return }
             MainActor.assumeIsolated {
-                Unmanaged<ResizeWatcher>.fromOpaque(refcon).takeUnretainedValue().onResize(element)
+                Unmanaged<WindowWatcher>.fromOpaque(refcon).takeUnretainedValue().onResize(element)
             }
         }, &created)
         guard status == .success, let created else { return nil }

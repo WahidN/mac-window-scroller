@@ -87,18 +87,18 @@ final class WindowChain {
     private let focusBorder = FocusBorder()
     private let miniMap = MiniMap()
     private var borderedWindow: ChainWindow?
-    private lazy var resizeWatcher = ResizeWatcher { [weak self] element in
+    private lazy var windowWatcher = WindowWatcher { [weak self] element in
         self?.windowResized(element)
     }
 
     func toggle(_ window: ChainWindow) -> Bool {
         if let index = windows.firstIndex(where: { CFEqual($0.element, window.element) }) {
-            resizeWatcher.unwatch(windows.remove(at: index))
-            resizeWatcher.keepObservers(for: windows)
+            windowWatcher.unwatch(windows.remove(at: index))
+            windowWatcher.keepObservers(for: windows)
             return false
         }
         windows.append(window)
-        resizeWatcher.watch(window)
+        windowWatcher.watch(window)
         return true
     }
 
@@ -120,7 +120,7 @@ final class WindowChain {
 
     func removeClosed() {
         windows.removeAll { $0.isClosed }
-        resizeWatcher.keepObservers(for: windows)
+        windowWatcher.keepObservers(for: windows)
     }
 
     func arrange(in area: CGRect, revealingNewest: Bool) {
