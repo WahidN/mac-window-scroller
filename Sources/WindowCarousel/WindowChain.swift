@@ -74,6 +74,7 @@ final class WindowChain {
     private var laidOutView: CGRect = .zero
     private var applyScheduled = false
     private let focusBorder = FocusBorder()
+    private let miniMap = MiniMap()
     private var borderedWindow: ChainWindow?
 
     func toggle(_ window: ChainWindow) -> Bool {
@@ -130,6 +131,24 @@ final class WindowChain {
         window.focus()
         borderedWindow = window
         focusBorder.show(around: StripLayout.parked(frames[index], in: laidOutView), of: window)
+        updateMiniMap()
+    }
+
+    func showMiniMap() {
+        guard !laidOutWindows.isEmpty else { return }
+        updateMiniMap()
+        miniMap.show()
+    }
+
+    func fadeOutMiniMap() {
+        miniMap.fadeOutSoon()
+    }
+
+    private func updateMiniMap() {
+        let focusedIndex = focusBorder.isShowing
+            ? laidOutWindows.firstIndex { window in borderedWindow.map { CFEqual($0.element, window.element) } ?? false }
+            : nil
+        miniMap.update(widths: laidOutWidths, offset: offset, viewWidth: laidOutView.width, focusedIndex: focusedIndex)
     }
 
     func refreshWidths() {
@@ -162,6 +181,7 @@ final class WindowChain {
                 window.setPosition(StripLayout.parked(frame, in: laidOutView).origin)
             }
             refreshBorder()
+            updateMiniMap()
         }
     }
 

@@ -33,6 +33,10 @@ final class FocusBorder {
         }
     }
 
+    var isShowing: Bool {
+        ownerPID != nil
+    }
+
     func show(around frame: CGRect, of window: ChainWindow) {
         hide()
         guard let pid = window.pid else { return }
