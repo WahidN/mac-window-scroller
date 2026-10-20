@@ -39,7 +39,7 @@ macOS uses three-finger sideways swipes for "Swipe between full-screen applicati
 | Three-finger swipe left or right | Scroll the strip |
 
 - New windows get half the screen width and the full usable height, with 8 pt gaps
-- Windows outside the view park at the screen edge, so a small strip stays visible
+- Windows outside the view park just past the screen edge, out of sight
 - Scrolling has momentum and a rubber band at both ends
 - When the strip comes to rest, the most visible window gets focus and an orange border
 - A mini-map at the bottom of the screen shows where you are while you scroll
