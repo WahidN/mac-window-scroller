@@ -163,6 +163,17 @@ final class WindowChain {
         place(placed, in: view, revealing: index)
     }
 
+    func move(_ window: ChainWindow, by step: Int, in area: CGRect) {
+        removeClosed()
+        guard let index = windows.firstIndex(where: { CFEqual($0.element, window.element) }),
+              let other = ChainOrder.swapIndex(from: index, step: step, isPlaced: windows.map { !$0.isMinimizedOrFullScreen })
+        else { return }
+
+        windows.swapAt(index, other)
+        let placed = windows.filter { !$0.isMinimizedOrFullScreen }
+        place(placed, in: StripLayout.view(in: area), revealing: placed.firstIndex { CFEqual($0.element, window.element) })
+    }
+
     private func place(_ placed: [ChainWindow], in view: CGRect, revealing index: Int?) {
         let newWidth = StripLayout.newWindowWidth(viewWidth: view.width)
         let widths = placed.map { $0.size?.width ?? newWidth }
