@@ -3,7 +3,7 @@ import SwiftUI
 
 @MainActor
 final class SettingsWindow {
-    private let window = NSWindow(contentRect: .zero, styleMask: [.titled, .closable], backing: .buffered, defer: true)
+    private let window = ClosableWindow(contentRect: .zero, styleMask: [.titled, .closable], backing: .buffered, defer: true)
 
     init() {
         window.title = "Settings"
@@ -17,6 +17,18 @@ final class SettingsWindow {
         if isFirstShow { window.center() }
         NSApp.activate()
         window.makeKeyAndOrderFront(nil)
+    }
+}
+
+// The app has no main menu, so there is no Close item to handle ⌘W
+private final class ClosableWindow: NSWindow {
+    override func performKeyEquivalent(with event: NSEvent) -> Bool {
+        if event.modifierFlags.intersection(.deviceIndependentFlagsMask) == .command,
+           event.charactersIgnoringModifiers == "w" {
+            performClose(nil)
+            return true
+        }
+        return super.performKeyEquivalent(with: event)
     }
 }
 
