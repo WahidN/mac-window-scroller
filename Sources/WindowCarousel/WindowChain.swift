@@ -111,9 +111,17 @@ final class WindowChain {
         }
     }
 
-    func scroll(by delta: CGFloat) {
+    var maxOffset: CGFloat {
+        StripLayout.clamped(.infinity, widths: laidOutWidths, viewWidth: laidOutView.width)
+    }
+
+    var viewWidth: CGFloat {
+        laidOutView.width
+    }
+
+    func show(offset newOffset: CGFloat) {
         guard !laidOutWindows.isEmpty else { return }
-        offset = StripLayout.clamped(offset + delta, widths: laidOutWidths, viewWidth: laidOutView.width)
+        offset = newOffset
         scheduleApply()
     }
 

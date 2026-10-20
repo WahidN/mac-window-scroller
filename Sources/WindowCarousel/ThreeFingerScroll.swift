@@ -26,7 +26,7 @@ private func onContactFrame(
     }
     DispatchQueue.main.async {
         MainActor.assumeIsolated {
-            ThreeFingerScroll.current?.handle(fingers: fingers, x: centroidX)
+            ThreeFingerScroll.current?.handle(fingers: fingers, x: centroidX, time: timestamp)
         }
     }
     return 0
@@ -35,11 +35,17 @@ private func onContactFrame(
 @MainActor
 final class ThreeFingerScroll {
     private static let pointsPerTrackpadWidth: CGFloat = 1600
+    private static let velocityWindow: Double = 0.1
     fileprivate static weak var current: ThreeFingerScroll?
 
     private let chain: WindowChain
     private let devices: CFMutableArray
     private var lastX: CGFloat?
+    private var rawOffset: CGFloat = 0
+    private var samples: [(time: Double, offset: CGFloat)] = []
+    private var velocity: CGFloat = 0
+    private var motionTimer: Timer?
+    private var lastTick: TimeInterval = 0
 
     init?(chain: WindowChain) {
         guard let framework = dlopen("/System/Library/PrivateFrameworks/MultitouchSupport.framework/MultitouchSupport", RTLD_NOW),
@@ -64,16 +70,70 @@ final class ThreeFingerScroll {
         }
     }
 
-    fileprivate func handle(fingers: Int, x: CGFloat) {
+    fileprivate func handle(fingers: Int, x: CGFloat, time: Double) {
         guard fingers == 3 else {
+            if lastX != nil { release(at: time) }
             lastX = nil
             return
         }
-        if let lastX {
-            chain.scroll(by: -(x - lastX) * Self.pointsPerTrackpadWidth)
-        } else {
+        guard let previousX = lastX else {
+            stopMotion()
             chain.refreshWidths()
+            rawOffset = chain.offset
+            samples = [(time, chain.offset)]
+            lastX = x
+            return
         }
         lastX = x
+        guard chain.maxOffset > 0 else { return }
+
+        rawOffset -= (x - previousX) * Self.pointsPerTrackpadWidth
+        let shown = ScrollPhysics.rubberBanded(rawOffset, maxOffset: chain.maxOffset, dimension: chain.viewWidth)
+        chain.show(offset: shown)
+        samples.append((time, shown))
+        samples.removeAll { time - $0.time > Self.velocityWindow }
+    }
+
+    private func release(at time: Double) {
+        let recent = samples.filter { time - $0.time <= Self.velocityWindow }
+        samples = []
+        velocity = 0
+        if let first = recent.first, let last = recent.last, last.time > first.time {
+            velocity = (last.offset - first.offset) / CGFloat(last.time - first.time)
+        }
+        startMotion()
+    }
+
+    private func startMotion() {
+        lastTick = ProcessInfo.processInfo.systemUptime
+        motionTimer = Timer.scheduledTimer(withTimeInterval: 1.0 / 60, repeats: true) { [weak self] _ in
+            MainActor.assumeIsolated { self?.tick() }
+        }
+    }
+
+    private func stopMotion() {
+        motionTimer?.invalidate()
+        motionTimer = nil
+        velocity = 0
+    }
+
+    private func tick() {
+        let now = ProcessInfo.processInfo.systemUptime
+        let dt = CGFloat(now - lastTick)
+        lastTick = now
+
+        let maxOffset = chain.maxOffset
+        let offset = chain.offset
+        let end = min(max(offset, 0), maxOffset)
+
+        if abs(velocity) >= ScrollPhysics.minimumVelocity {
+            let next = ScrollPhysics.momentumStep(offset: offset, velocity: velocity, maxOffset: maxOffset, dt: dt)
+            velocity = next.velocity
+            chain.show(offset: next.offset)
+        } else if offset != end {
+            chain.show(offset: ScrollPhysics.springStep(offset: offset, target: end, dt: dt))
+        } else {
+            stopMotion()
+        }
     }
 }
