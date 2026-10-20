@@ -57,6 +57,10 @@ struct ChainWindow {
 final class WindowChain {
     private(set) var windows: [ChainWindow] = []
     private(set) var offset: CGFloat = 0
+    private var laidOutWindows: [ChainWindow] = []
+    private var laidOutWidths: [CGFloat] = []
+    private var laidOutView: CGRect = .zero
+    private var applyScheduled = false
 
     func toggle(_ window: ChainWindow) -> Bool {
         if let index = windows.firstIndex(where: { CFEqual($0.element, window.element) }) {
@@ -74,6 +78,7 @@ final class WindowChain {
     func arrange(in area: CGRect, revealingNewest: Bool) {
         removeClosed()
         let placed = windows.filter { !$0.isMinimizedOrFullScreen }
+        laidOutWindows = []
         guard !placed.isEmpty else { return }
 
         let view = StripLayout.view(in: area)
@@ -93,6 +98,28 @@ final class WindowChain {
             let target = StripLayout.parked(frame, in: view)
             window.setPosition(target.origin)
             window.setSize(target.size)
+        }
+
+        laidOutWindows = placed
+        laidOutWidths = widths
+        laidOutView = view
+    }
+
+    func scroll(by delta: CGFloat) {
+        guard !laidOutWindows.isEmpty else { return }
+        offset = StripLayout.clamped(offset + delta, widths: laidOutWidths, viewWidth: laidOutView.width)
+        scheduleApply()
+    }
+
+    private func scheduleApply() {
+        guard !applyScheduled else { return }
+        applyScheduled = true
+        Task { @MainActor in
+            applyScheduled = false
+            let frames = StripLayout.frames(widths: laidOutWidths, in: laidOutView, offset: offset)
+            for (window, frame) in zip(laidOutWindows, frames) {
+                window.setPosition(StripLayout.parked(frame, in: laidOutView).origin)
+            }
         }
     }
 }

@@ -7,6 +7,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
     private let chain = WindowChain()
     private var hotkey: Hotkey?
+    private var threeFingerScroll: ThreeFingerScroll?
     private let chainSeparator = NSMenuItem.separator()
     private var chainItems: [NSMenuItem] = []
     private let permissionItem = NSMenuItem()
@@ -46,6 +47,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         hotkey = Hotkey(keyCode: kVK_ANSI_C, modifiers: controlKey | optionKey) { [weak self] in
             self?.toggleFocusedWindow()
         }
+        threeFingerScroll = ThreeFingerScroll(chain: chain)
 
         Accessibility.promptIfNeeded()
     }
