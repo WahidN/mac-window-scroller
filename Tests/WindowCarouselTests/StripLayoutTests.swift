@@ -7,10 +7,9 @@ struct StripLayoutTests {
     var view: CGRect { StripLayout.view(in: area) }
     var half: CGFloat { StripLayout.newWindowWidth(viewWidth: view.width) }
 
-    @Test func viewLeavesAPeekZoneOnBothSides() {
-        #expect(view.minX == 56)
-        #expect(view.maxX == 1654)
-        #expect(half == 795)
+    @Test func viewSpansTheUsableArea() {
+        #expect(view == area)
+        #expect(half == 843)
     }
 
     @Test func twoNewWindowsFillTheView() {
@@ -69,20 +68,20 @@ struct StripLayoutTests {
         #expect(StripLayout.mostVisibleIndex(frames: [], in: view) == nil)
     }
 
-    @Test func windowsLeftOfTheViewAreParkedInTheLeftPeekZone() {
+    @Test func windowsLeftOfTheViewAreParkedOffScreen() {
         let hidden = CGRect(x: -2000, y: area.minY, width: half, height: area.height)
         let parked = StripLayout.parked(hidden, in: view)
 
         #expect(parked.maxX == view.minX - StripLayout.gap)
-        #expect(parked.maxX == area.minX + StripLayout.peek)
+        #expect(parked.maxX == area.minX - StripLayout.gap)
     }
 
-    @Test func windowsRightOfTheViewAreParkedInTheRightPeekZone() {
+    @Test func windowsRightOfTheViewAreParkedOffScreen() {
         let hidden = CGRect(x: 3000, y: area.minY, width: half, height: area.height)
         let parked = StripLayout.parked(hidden, in: view)
 
         #expect(parked.minX == view.maxX + StripLayout.gap)
-        #expect(parked.minX == area.maxX - StripLayout.peek)
+        #expect(parked.minX == area.maxX + StripLayout.gap)
     }
 
     @Test func partlyVisibleWindowsStayWhereTheyAre() {

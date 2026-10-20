@@ -2,10 +2,9 @@ import CoreGraphics
 
 enum StripLayout {
     static let gap: CGFloat = 8
-    static let peek: CGFloat = 40
 
     static func view(in area: CGRect) -> CGRect {
-        area.insetBy(dx: peek + gap, dy: 0)
+        area
     }
 
     static func newWindowWidth(viewWidth: CGFloat) -> CGFloat {
