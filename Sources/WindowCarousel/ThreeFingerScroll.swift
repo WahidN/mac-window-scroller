@@ -71,6 +71,8 @@ final class ThreeFingerScroll {
         }
         if let lastX {
             chain.scroll(by: -(x - lastX) * Self.pointsPerTrackpadWidth)
+        } else {
+            chain.refreshWidths()
         }
         lastX = x
     }

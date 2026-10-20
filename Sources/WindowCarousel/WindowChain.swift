@@ -105,6 +105,12 @@ final class WindowChain {
         laidOutView = view
     }
 
+    func refreshWidths() {
+        laidOutWidths = zip(laidOutWindows, laidOutWidths).map { window, cached in
+            window.size?.width ?? cached
+        }
+    }
+
     func scroll(by delta: CGFloat) {
         guard !laidOutWindows.isEmpty else { return }
         offset = StripLayout.clamped(offset + delta, widths: laidOutWidths, viewWidth: laidOutView.width)
