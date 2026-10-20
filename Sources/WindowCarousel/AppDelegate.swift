@@ -70,7 +70,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     private func toggleFocusedWindow() {
         guard let window = Accessibility.focusedWindow() else { return }
-        chain.toggle(window)
+        let added = chain.toggle(window)
+        guard let area = Screen.usableArea() else { return }
+        chain.arrange(in: area, revealingNewest: added)
     }
 
     @objc private func openAccessibilitySettings() {

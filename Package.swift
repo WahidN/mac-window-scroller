@@ -5,6 +5,7 @@ let package = Package(
     name: "WindowCarousel",
     platforms: [.macOS(.v14)],
     targets: [
-        .executableTarget(name: "WindowCarousel")
+        .executableTarget(name: "WindowCarousel"),
+        .testTarget(name: "WindowCarouselTests", dependencies: ["WindowCarousel"])
     ]
 )
