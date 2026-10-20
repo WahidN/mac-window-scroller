@@ -79,6 +79,7 @@ final class ThreeFingerScroll {
         guard let previousX = lastX else {
             stopMotion()
             chain.refreshWidths()
+            chain.showMiniMap()
             rawOffset = chain.offset
             samples = [(time, chain.offset)]
             lastX = x
@@ -135,6 +136,7 @@ final class ThreeFingerScroll {
         } else {
             stopMotion()
             chain.focusMostVisible()
+            chain.fadeOutMiniMap()
         }
     }
 }
