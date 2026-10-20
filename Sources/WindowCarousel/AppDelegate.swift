@@ -1,8 +1,14 @@
 import AppKit
+import Carbon.HIToolbox
 
 @main
+@MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
+    private let chain = WindowChain()
+    private var hotkey: Hotkey?
+    private let chainSeparator = NSMenuItem.separator()
+    private var chainItems: [NSMenuItem] = []
     private let permissionItem = NSMenuItem()
     private let openSettingsItem = NSMenuItem(
         title: "Open Accessibility Settings…",
@@ -28,6 +34,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         openSettingsItem.target = self
         menu.addItem(permissionItem)
         menu.addItem(openSettingsItem)
+        menu.addItem(chainSeparator)
         menu.addItem(.separator())
         menu.addItem(NSMenuItem(
             title: "Quit Window Carousel",
@@ -36,6 +43,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         ))
         statusItem.menu = menu
 
+        hotkey = Hotkey(keyCode: kVK_ANSI_C, modifiers: controlKey | optionKey) { [weak self] in
+            self?.toggleFocusedWindow()
+        }
+
         Accessibility.promptIfNeeded()
     }
 
@@ -43,6 +54,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let granted = Accessibility.isGranted
         permissionItem.title = granted ? "Accessibility: granted" : "Accessibility: not granted"
         openSettingsItem.isHidden = granted
+        refreshChainItems(in: menu)
+    }
+
+    private func refreshChainItems(in menu: NSMenu) {
+        chainItems.forEach(menu.removeItem)
+        chain.removeClosed()
+        let titles = chain.windows.isEmpty ? ["Chain is empty"] : chain.windows.map(\.menuTitle)
+        chainItems = titles.map { NSMenuItem(title: $0, action: nil, keyEquivalent: "") }
+        let start = menu.index(of: chainSeparator) + 1
+        for (offset, item) in chainItems.enumerated() {
+            menu.insertItem(item, at: start + offset)
+        }
+    }
+
+    private func toggleFocusedWindow() {
+        guard let window = Accessibility.focusedWindow() else { return }
+        chain.toggle(window)
     }
 
     @objc private func openAccessibilitySettings() {
