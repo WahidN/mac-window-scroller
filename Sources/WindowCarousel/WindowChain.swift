@@ -94,6 +94,7 @@ final class WindowChain {
     func toggle(_ window: ChainWindow) -> Bool {
         if let index = windows.firstIndex(where: { CFEqual($0.element, window.element) }) {
             resizeWatcher.unwatch(windows.remove(at: index))
+            resizeWatcher.keepObservers(for: windows)
             return false
         }
         windows.append(window)
@@ -119,6 +120,7 @@ final class WindowChain {
 
     func removeClosed() {
         windows.removeAll { $0.isClosed }
+        resizeWatcher.keepObservers(for: windows)
     }
 
     func arrange(in area: CGRect, revealingNewest: Bool) {

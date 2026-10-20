@@ -21,6 +21,14 @@ final class ResizeWatcher {
         AXObserverRemoveNotification(observer, window.element, kAXResizedNotification as CFString)
     }
 
+    func keepObservers(for windows: [ChainWindow]) {
+        let pids = Set(windows.compactMap(\.pid))
+        for (pid, observer) in observers where !pids.contains(pid) {
+            CFRunLoopRemoveSource(CFRunLoopGetMain(), AXObserverGetRunLoopSource(observer), .commonModes)
+            observers[pid] = nil
+        }
+    }
+
     private func observer(for pid: pid_t) -> AXObserver? {
         if let observer = observers[pid] { return observer }
         var created: AXObserver?
