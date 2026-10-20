@@ -34,6 +34,18 @@ struct ChainWindow {
         AXUIElementSetAttributeValue(element, kAXSizeAttribute as CFString, value)
     }
 
+    var pid: pid_t? {
+        var pid: pid_t = 0
+        return AXUIElementGetPid(element, &pid) == .success ? pid : nil
+    }
+
+    func focus() {
+        guard let pid else { return }
+        AXUIElementSetAttributeValue(AXUIElementCreateApplication(pid), kAXFrontmostAttribute as CFString, kCFBooleanTrue)
+        AXUIElementSetAttributeValue(element, kAXMainAttribute as CFString, kCFBooleanTrue)
+        AXUIElementPerformAction(element, kAXRaiseAction as CFString)
+    }
+
     func setPosition(_ position: CGPoint) {
         var position = position
         guard let value = AXValueCreate(.cgPoint, &position) else { return }
@@ -61,6 +73,8 @@ final class WindowChain {
     private var laidOutWidths: [CGFloat] = []
     private var laidOutView: CGRect = .zero
     private var applyScheduled = false
+    private let focusBorder = FocusBorder()
+    private var borderedWindow: ChainWindow?
 
     func toggle(_ window: ChainWindow) -> Bool {
         if let index = windows.firstIndex(where: { CFEqual($0.element, window.element) }) {
@@ -79,7 +93,10 @@ final class WindowChain {
         removeClosed()
         let placed = windows.filter { !$0.isMinimizedOrFullScreen }
         laidOutWindows = []
-        guard !placed.isEmpty else { return }
+        guard !placed.isEmpty else {
+            refreshBorder()
+            return
+        }
 
         let view = StripLayout.view(in: area)
         let newWidth = StripLayout.newWindowWidth(viewWidth: view.width)
@@ -103,6 +120,16 @@ final class WindowChain {
         laidOutWindows = placed
         laidOutWidths = widths
         laidOutView = view
+        refreshBorder()
+    }
+
+    func focusMostVisible() {
+        let frames = StripLayout.frames(widths: laidOutWidths, in: laidOutView, offset: offset)
+        guard let index = StripLayout.mostVisibleIndex(frames: frames, in: laidOutView) else { return }
+        let window = laidOutWindows[index]
+        window.focus()
+        borderedWindow = window
+        focusBorder.show(around: StripLayout.parked(frames[index], in: laidOutView), of: window)
     }
 
     func refreshWidths() {
@@ -134,6 +161,18 @@ final class WindowChain {
             for (window, frame) in zip(laidOutWindows, frames) {
                 window.setPosition(StripLayout.parked(frame, in: laidOutView).origin)
             }
+            refreshBorder()
         }
+    }
+
+    private func refreshBorder() {
+        guard let bordered = borderedWindow else { return }
+        guard let index = laidOutWindows.firstIndex(where: { CFEqual($0.element, bordered.element) }) else {
+            borderedWindow = nil
+            focusBorder.hide()
+            return
+        }
+        let frames = StripLayout.frames(widths: laidOutWidths, in: laidOutView, offset: offset)
+        focusBorder.move(around: StripLayout.parked(frames[index], in: laidOutView))
     }
 }

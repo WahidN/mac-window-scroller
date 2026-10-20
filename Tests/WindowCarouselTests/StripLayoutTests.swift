@@ -47,6 +47,28 @@ struct StripLayoutTests {
         #expect(StripLayout.clamped(5000, widths: [half, half, half], viewWidth: view.width) == stripWidth - view.width)
     }
 
+    @Test func mostVisibleWindowWins() {
+        let frames = StripLayout.frames(widths: [half, half, half], in: view, offset: 600)
+
+        #expect(StripLayout.mostVisibleIndex(frames: frames, in: view) == 1)
+    }
+
+    @Test func leftWindowWinsWhenTwoAreFullyVisible() {
+        let frames = StripLayout.frames(widths: [half, half], in: view, offset: 0)
+
+        #expect(StripLayout.mostVisibleIndex(frames: frames, in: view) == 0)
+    }
+
+    @Test func halfHiddenWindowLosesToAFullyVisibleOne() {
+        let frames = StripLayout.frames(widths: [half, half, half], in: view, offset: half / 2)
+
+        #expect(StripLayout.mostVisibleIndex(frames: frames, in: view) == 1)
+    }
+
+    @Test func noWindowsMeansNoFocus() {
+        #expect(StripLayout.mostVisibleIndex(frames: [], in: view) == nil)
+    }
+
     @Test func windowsLeftOfTheViewAreParkedInTheLeftPeekZone() {
         let hidden = CGRect(x: -2000, y: area.minY, width: half, height: area.height)
         let parked = StripLayout.parked(hidden, in: view)

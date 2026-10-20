@@ -30,6 +30,12 @@ enum StripLayout {
         return frame
     }
 
+    static func mostVisibleIndex(frames: [CGRect], in view: CGRect) -> Int? {
+        let visibleWidths = frames.map { max(0, min($0.maxX, view.maxX) - max($0.minX, view.minX)) }
+        guard let widest = visibleWidths.max(), widest > 0 else { return nil }
+        return visibleWidths.firstIndex(of: widest)
+    }
+
     static func offset(revealing index: Int, widths: [CGFloat], viewWidth: CGFloat, current: CGFloat) -> CGFloat {
         let left = widths[..<index].reduce(0, +) + gap * CGFloat(index)
         let right = left + widths[index]

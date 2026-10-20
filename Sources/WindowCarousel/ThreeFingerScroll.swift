@@ -134,6 +134,7 @@ final class ThreeFingerScroll {
             chain.show(offset: ScrollPhysics.springStep(offset: offset, target: end, dt: dt))
         } else {
             stopMotion()
+            chain.focusMostVisible()
         }
     }
 }
