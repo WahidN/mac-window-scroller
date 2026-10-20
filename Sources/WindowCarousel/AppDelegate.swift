@@ -17,6 +17,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         action: #selector(openAccessibilitySettings),
         keyEquivalent: ""
     )
+    private lazy var settingsWindow = SettingsWindow()
 
     static func main() {
         let app = NSApplication.shared
@@ -38,6 +39,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         menu.addItem(openSettingsItem)
         menu.addItem(chainSeparator)
         menu.addItem(.separator())
+        let settingsItem = NSMenuItem(title: "Settings…", action: #selector(showSettings), keyEquivalent: ",")
+        settingsItem.target = self
+        menu.addItem(settingsItem)
         menu.addItem(NSMenuItem(
             title: "Quit Window Carousel",
             action: #selector(NSApplication.terminate(_:)),
@@ -88,5 +92,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     @objc private func openAccessibilitySettings() {
         Accessibility.openSettings()
+    }
+
+    @objc private func showSettings() {
+        settingsWindow.show()
     }
 }
