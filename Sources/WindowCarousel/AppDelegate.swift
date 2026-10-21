@@ -12,6 +12,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var moveRightHotkey: Hotkey?
     private lazy var stripMotion = StripMotion(chain: chain)
     private var threeFingerScroll: ThreeFingerScroll?
+    private var mouseScroll: MouseScroll?
     private let chainSeparator = NSMenuItem.separator()
     private var chainItems: [NSMenuItem] = []
     private let permissionItem = NSMenuItem()
@@ -65,6 +66,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             self?.moveFocusedWindow(by: 1)
         }
         threeFingerScroll = ThreeFingerScroll(chain: chain, motion: stripMotion)
+        mouseScroll = MouseScroll(chain: chain, motion: stripMotion)
 
         Accessibility.promptIfNeeded()
     }
