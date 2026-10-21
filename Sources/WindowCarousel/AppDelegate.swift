@@ -66,15 +66,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             self?.moveFocusedWindow(by: 1)
         }
         threeFingerScroll = ThreeFingerScroll(chain: chain, motion: stripMotion)
-        mouseScroll = MouseScroll(chain: chain, motion: stripMotion)
+        startMouseScrollIfNeeded()
 
         Accessibility.promptIfNeeded()
+    }
+
+    private func startMouseScrollIfNeeded() {
+        guard mouseScroll == nil, Accessibility.isGranted else { return }
+        mouseScroll = MouseScroll(chain: chain, motion: stripMotion)
     }
 
     func menuWillOpen(_ menu: NSMenu) {
         let granted = Accessibility.isGranted
         permissionItem.title = granted ? "Accessibility: granted" : "Accessibility: not granted"
         openSettingsItem.isHidden = granted
+        startMouseScrollIfNeeded()
         refreshChainItems(in: menu)
     }
 
@@ -90,6 +96,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     private func toggleFocusedWindow() {
+        startMouseScrollIfNeeded()
         guard let window = Accessibility.focusedWindow() else { return }
         let added = chain.toggle(window)
         guard let area = Screen.usableArea() else { return }
