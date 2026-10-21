@@ -10,7 +10,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var fullWidthHotkey: Hotkey?
     private var moveLeftHotkey: Hotkey?
     private var moveRightHotkey: Hotkey?
+    private lazy var stripMotion = StripMotion(chain: chain)
     private var threeFingerScroll: ThreeFingerScroll?
+    private var mouseScroll: MouseScroll?
     private let chainSeparator = NSMenuItem.separator()
     private var chainItems: [NSMenuItem] = []
     private let permissionItem = NSMenuItem()
@@ -63,7 +65,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         moveRightHotkey = Hotkey(keyCode: kVK_RightArrow, modifiers: controlKey | optionKey) { [weak self] in
             self?.moveFocusedWindow(by: 1)
         }
-        threeFingerScroll = ThreeFingerScroll(chain: chain)
+        threeFingerScroll = ThreeFingerScroll(chain: chain, motion: stripMotion)
+        startMouseScrollIfNeeded()
         updates.onReleaseChange = { [weak self] in self?.refreshUpdateIndicators() }
         refreshUpdateIndicators()
         updates.start()
@@ -71,10 +74,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         Accessibility.promptIfNeeded()
     }
 
+    private func startMouseScrollIfNeeded() {
+        guard mouseScroll == nil, Accessibility.isGranted else { return }
+        mouseScroll = MouseScroll(chain: chain, motion: stripMotion)
+    }
+
     func menuWillOpen(_ menu: NSMenu) {
         let granted = Accessibility.isGranted
         permissionItem.title = granted ? "Accessibility: granted" : "Accessibility: not granted"
         openSettingsItem.isHidden = granted
+        startMouseScrollIfNeeded()
         refreshChainItems(in: menu)
     }
 
@@ -108,6 +117,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     private func toggleFocusedWindow() {
+        startMouseScrollIfNeeded()
         guard let window = Accessibility.focusedWindow() else { return }
         let added = chain.toggle(window)
         guard let area = Screen.usableArea() else { return }
