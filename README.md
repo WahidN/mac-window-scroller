@@ -51,6 +51,15 @@ macOS uses three-finger sideways swipes for "Swipe between full-screen applicati
 
 The chain starts empty each time the app launches.
 
+## Updates
+
+The app checks GitHub for a newer release at launch and once a day. When there is one, the menu bar icon gets an orange dot and the menu shows 'Update to <version>…'. Click 'Install and Restart' in Settings to install it.
+
+The installer only accepts an app signed with the same certificate as the running one. For the check to find a release:
+
+- Tag it with the version from `Info.plist` and a `v` in front, for example `v0.5.0`
+- Attach one `.zip` with `WindowCarousel.app` inside, signed by `make app`
+
 ## How it works
 
 - Windows are moved and resized through the Accessibility API (`AXUIElement`)
@@ -58,6 +67,7 @@ The chain starts empty each time the app launches.
 - Mouse scrolling uses a `CGEventTap`, so the app can take `⌥` + sideways scroll events before other apps see them
 - Raw trackpad touches come from the private `MultitouchSupport` framework, loaded with `dlopen`. If it's missing, scrolling turns off and the rest of the app keeps working
 - Start at login uses `SMAppService.mainApp`
+- Updates come from the GitHub releases API. The download is checked with `SecStaticCodeCheckValidity` against the running app's designated requirement before it replaces the app
 
 ## Project layout
 

@@ -21,7 +21,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         action: #selector(openAccessibilitySettings),
         keyEquivalent: ""
     )
-    private lazy var settingsWindow = SettingsWindow()
+    private let updates = UpdateController()
+    private let updateItem = NSMenuItem()
+    private lazy var settingsWindow = SettingsWindow(updates: updates)
 
     static func main() {
         let app = NSApplication.shared
@@ -31,14 +33,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        statusItem.button?.image = NSImage(
-            systemSymbolName: "rectangle.split.3x1",
-            accessibilityDescription: "Window Carousel"
-        )
-
         let menu = NSMenu()
         menu.delegate = self
         openSettingsItem.target = self
+        updateItem.target = self
+        updateItem.action = #selector(showSettings)
+        menu.addItem(updateItem)
         menu.addItem(permissionItem)
         menu.addItem(openSettingsItem)
         menu.addItem(chainSeparator)
@@ -67,6 +67,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
         threeFingerScroll = ThreeFingerScroll(chain: chain, motion: stripMotion)
         startMouseScrollIfNeeded()
+        updates.onReleaseChange = { [weak self] in self?.refreshUpdateIndicators() }
+        refreshUpdateIndicators()
+        updates.start()
 
         Accessibility.promptIfNeeded()
     }
@@ -82,6 +85,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         openSettingsItem.isHidden = granted
         startMouseScrollIfNeeded()
         refreshChainItems(in: menu)
+    }
+
+    private func refreshUpdateIndicators() {
+        let icon = NSImage(systemSymbolName: "rectangle.split.3x1", accessibilityDescription: "Window Carousel")
+        statusItem.button?.image = updates.release == nil ? icon : icon.map(Self.withUpdateDot)
+        updateItem.title = updates.release.map { "Update to \($0.version)…" } ?? ""
+        updateItem.isHidden = updates.release == nil
+    }
+
+    private static func withUpdateDot(_ icon: NSImage) -> NSImage {
+        NSImage(size: icon.size, flipped: false) { rect in
+            icon.draw(in: rect)
+            NSColor.labelColor.set()
+            rect.fill(using: .sourceAtop)
+            NSColor.systemOrange.setFill()
+            NSBezierPath(ovalIn: NSRect(x: rect.maxX - 6, y: rect.maxY - 6, width: 6, height: 6)).fill()
+            return true
+        }
     }
 
     private func refreshChainItems(in menu: NSMenu) {
