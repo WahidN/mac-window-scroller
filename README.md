@@ -7,7 +7,7 @@ A macOS menu bar app that puts your windows side by side in one horizontal strip
 - macOS 14 or later
 - Swift 6 (Xcode 16 or the matching command line tools)
 - An "Apple Development" signing certificate in your keychain, used by `make app`
-- A trackpad for scrolling
+- A trackpad or a mouse for scrolling
 
 ## Build and run
 
@@ -37,6 +37,7 @@ macOS uses three-finger sideways swipes for "Swipe between full-screen applicati
 | `⌃⌥F` | Make the focused chained window full width, press again to restore its width |
 | `⌃⌥←` / `⌃⌥→` | Move the focused chained window one place left or right in the chain |
 | Three-finger swipe left or right | Scroll the strip |
+| Hold `⌥` and scroll sideways | Scroll the strip with a mouse. Sideways is a tilt wheel, a Magic Mouse swipe or `⇧` + wheel. Two-finger trackpad scrolling works too |
 
 - New windows get half the screen width and the full usable height, with 8 pt gaps
 - Windows outside the view park just past the screen edge, out of sight
@@ -54,6 +55,7 @@ The chain starts empty each time the app launches.
 
 - Windows are moved and resized through the Accessibility API (`AXUIElement`)
 - Hotkeys are registered with Carbon's `RegisterEventHotKey`, so they work in any app
+- Mouse scrolling uses a `CGEventTap`, so the app can take `⌥` + sideways scroll events before other apps see them
 - Raw trackpad touches come from the private `MultitouchSupport` framework, loaded with `dlopen`. If it's missing, scrolling turns off and the rest of the app keeps working
 - Start at login uses `SMAppService.mainApp`
 
