@@ -42,6 +42,7 @@ final class ThreeFingerScroll {
     private let motion: StripMotion
     private let devices: CFMutableArray
     private var lastX: CGFloat?
+    private var ignoringSwipe = false
     private var rawOffset: CGFloat = 0
     private var samples: [(time: Double, offset: CGFloat)] = []
 
@@ -73,9 +74,15 @@ final class ThreeFingerScroll {
         guard fingers == 3 else {
             if lastX != nil { release(at: time) }
             lastX = nil
+            ignoringSwipe = false
             return
         }
+        guard !ignoringSwipe else { return }
         guard let previousX = lastX else {
+            guard let focused = Accessibility.focusedWindow(), chain.contains(focused) else {
+                ignoringSwipe = true
+                return
+            }
             motion.stop()
             chain.refreshWidths()
             chain.showMiniMap()
