@@ -95,6 +95,7 @@ final class MouseScroll {
     }
 
     private func begin() -> Bool {
+        guard let focused = Accessibility.focusedWindow(), chain.contains(focused) else { return false }
         chain.refreshWidths()
         guard chain.maxOffset > 0 else { return false }
         motion.stop()

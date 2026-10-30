@@ -210,6 +210,10 @@ final class WindowChain {
         refreshBorder()
     }
 
+    func contains(_ window: ChainWindow) -> Bool {
+        laidOutWindows.contains { CFEqual($0.element, window.element) }
+    }
+
     func focusMostVisible() {
         let frames = StripLayout.frames(widths: laidOutWidths, in: laidOutView, offset: offset)
         guard let index = StripLayout.mostVisibleIndex(frames: frames, in: laidOutView) else { return }

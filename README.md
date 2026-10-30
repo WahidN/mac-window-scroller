@@ -37,8 +37,8 @@ macOS uses three-finger sideways swipes for "Swipe between full-screen applicati
 | `⌃⌥F` | Make the focused chained window full width, press again to restore its width |
 | `⌃⌥←` / `⌃⌥→` | Move the focused chained window one place left or right in the chain |
 | `⌃⌥X` | Drop the window with the orange border from the chain, for example an empty slot |
-| Three-finger swipe left or right | Scroll the strip |
-| Hold `⌥` and scroll sideways | Scroll the strip with a mouse. Sideways is a tilt wheel, a Magic Mouse swipe or `⇧` + wheel. Two-finger trackpad scrolling works too |
+| Three-finger swipe left or right | Scroll the strip, only while a chained window has focus |
+| Hold `⌥` and scroll sideways | Scroll the strip with a mouse. Sideways is a tilt wheel, a Magic Mouse swipe or `⇧` + wheel. Two-finger trackpad scrolling works too. Only while a chained window has focus |
 
 - New windows get half the screen width and the full usable height, with 8 pt gaps
 - Windows outside the view park just past the screen edge, out of sight
