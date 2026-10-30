@@ -84,9 +84,12 @@ final class MouseScroll {
         if scroll.momentumPhase == momentumEnded {
             end()
         } else if scroll.phase != phaseBegan, scroll.phase != phaseChanged {
-            idleTimer = Timer.scheduledTimer(withTimeInterval: Self.idleDelay, repeats: false) { [weak self] _ in
+            let timer = Timer(timeInterval: Self.idleDelay, repeats: false) { [weak self] _ in
                 MainActor.assumeIsolated { self?.end() }
             }
+            // Common modes keep it firing while a menu or alert is open
+            RunLoop.main.add(timer, forMode: .common)
+            idleTimer = timer
         }
         return true
     }
