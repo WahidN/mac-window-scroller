@@ -31,6 +31,15 @@ struct ShortcutsView: View {
                     .frame(maxWidth: .infinity)
                 Text("Three-finger swipe to scroll the strip")
             }
+            GridRow {
+                HStack(spacing: 6) {
+                    KeyCap(key: "⌥")
+                    Image(systemName: "computermouse")
+                        .font(.title3)
+                }
+                .frame(maxWidth: .infinity)
+                Text("Hold and scroll sideways with a mouse")
+            }
         }
         .padding(.vertical, 8)
         .fixedSize()
