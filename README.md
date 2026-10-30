@@ -46,7 +46,7 @@ macOS uses three-finger sideways swipes for "Swipe between full-screen applicati
 - A mini-map at the bottom of the screen shows where you are while you scroll
 - Resize a chained window by dragging its edge and its neighbours move along
 - Close a chained window and the windows after it slide over to close the gap
-- The menu bar menu lists the chain, shows the permission status and opens Settings (`⌘,`)
+- The menu bar menu lists the chain, shows the permission status, lists the keyboard shortcuts and opens Settings (`⌘,`)
 - Settings shows the version and has a 'Start at login' checkbox
 
 The chain starts empty each time the app launches.
