@@ -10,6 +10,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var fullWidthHotkey: Hotkey?
     private var moveLeftHotkey: Hotkey?
     private var moveRightHotkey: Hotkey?
+    private var dropHotkey: Hotkey?
     private var threeFingerScroll: ThreeFingerScroll?
     private let chainSeparator = NSMenuItem.separator()
     private var chainItems: [NSMenuItem] = []
@@ -62,6 +63,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
         moveRightHotkey = Hotkey(keyCode: kVK_RightArrow, modifiers: controlKey | optionKey) { [weak self] in
             self?.moveFocusedWindow(by: 1)
+        }
+        dropHotkey = Hotkey(keyCode: kVK_ANSI_X, modifiers: controlKey | optionKey) { [weak self] in
+            self?.chain.dropBordered()
         }
         threeFingerScroll = ThreeFingerScroll(chain: chain)
 

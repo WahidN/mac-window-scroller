@@ -36,6 +36,7 @@ macOS uses three-finger sideways swipes for "Swipe between full-screen applicati
 | `⌃⌥C` | Add the focused window to the chain, or remove it if it's already in it |
 | `⌃⌥F` | Make the focused chained window full width, press again to restore its width |
 | `⌃⌥←` / `⌃⌥→` | Move the focused chained window one place left or right in the chain |
+| `⌃⌥X` | Drop the window with the orange border from the chain, for example an empty slot |
 | Three-finger swipe left or right | Scroll the strip |
 
 - New windows get half the screen width and the full usable height, with 8 pt gaps
