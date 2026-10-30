@@ -1,5 +1,6 @@
 import AppKit
 import Carbon.HIToolbox
+import SwiftUI
 
 @main
 @MainActor
@@ -10,6 +11,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var fullWidthHotkey: Hotkey?
     private var moveLeftHotkey: Hotkey?
     private var moveRightHotkey: Hotkey?
+    private var dropHotkey: Hotkey?
     private lazy var stripMotion = StripMotion(chain: chain)
     private var threeFingerScroll: ThreeFingerScroll?
     private var mouseScroll: MouseScroll?
@@ -43,8 +45,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         menu.addItem(openSettingsItem)
         menu.addItem(chainSeparator)
         menu.addItem(.separator())
-        let settingsItem = NSMenuItem(title: "Settings…", action: #selector(showSettings), keyEquivalent: ",")
+        let shortcutsItem = NSMenuItem(title: "Keyboard Shortcuts", action: #selector(showShortcuts), keyEquivalent: "")
+        shortcutsItem.target = self
+        shortcutsItem.image = NSImage(systemSymbolName: "keyboard", accessibilityDescription: nil)
+        menu.addItem(shortcutsItem)
+        let settingsItem = NSMenuItem(title: "Settings", action: #selector(showSettings), keyEquivalent: ",")
         settingsItem.target = self
+        settingsItem.image = NSImage(systemSymbolName: "gearshape", accessibilityDescription: nil)
         menu.addItem(settingsItem)
         menu.addItem(NSMenuItem(
             title: "Quit Window Carousel",
@@ -64,6 +71,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
         moveRightHotkey = Hotkey(keyCode: kVK_RightArrow, modifiers: controlKey | optionKey) { [weak self] in
             self?.moveFocusedWindow(by: 1)
+        }
+        dropHotkey = Hotkey(keyCode: kVK_ANSI_X, modifiers: controlKey | optionKey) { [weak self] in
+            self?.chain.dropBordered()
         }
         threeFingerScroll = ThreeFingerScroll(chain: chain, motion: stripMotion)
         startMouseScrollIfNeeded()
@@ -140,5 +150,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     @objc private func showSettings() {
         settingsWindow.show()
+    }
+
+    @objc private func showShortcuts() {
+        let alert = NSAlert()
+        alert.messageText = "Keyboard Shortcuts"
+        let shortcuts = NSHostingView(rootView: ShortcutsView())
+        shortcuts.frame.size = shortcuts.fittingSize
+        alert.accessoryView = shortcuts
+        NSApp.activate()
+        alert.runModal()
     }
 }

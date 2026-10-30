@@ -126,6 +126,16 @@ final class WindowChain {
         place(windows.filter { !$0.isMinimizedOrFullScreen }, in: laidOutView, revealing: nil)
     }
 
+    func dropBordered() {
+        guard let bordered = borderedWindow,
+              let index = windows.firstIndex(where: { CFEqual($0.element, bordered.element) })
+        else { return }
+        windowWatcher.unwatch(windows.remove(at: index))
+        windowWatcher.keepObservers(for: windows)
+        removeClosed()
+        place(windows.filter { !$0.isMinimizedOrFullScreen }, in: laidOutView, revealing: nil)
+    }
+
     func removeClosed() {
         windows.removeAll { $0.isClosed }
         windowWatcher.keepObservers(for: windows)

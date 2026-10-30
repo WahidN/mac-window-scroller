@@ -36,6 +36,7 @@ macOS uses three-finger sideways swipes for "Swipe between full-screen applicati
 | `⌃⌥C` | Add the focused window to the chain, or remove it if it's already in it |
 | `⌃⌥F` | Make the focused chained window full width, press again to restore its width |
 | `⌃⌥←` / `⌃⌥→` | Move the focused chained window one place left or right in the chain |
+| `⌃⌥X` | Drop the window with the orange border from the chain, for example an empty slot |
 | Three-finger swipe left or right | Scroll the strip, only while a chained window has focus |
 | Hold `⌥` and scroll sideways | Scroll the strip with a mouse. Sideways is a tilt wheel, a Magic Mouse swipe or `⇧` + wheel. Two-finger trackpad scrolling works too. Only while a chained window has focus |
 
@@ -46,7 +47,7 @@ macOS uses three-finger sideways swipes for "Swipe between full-screen applicati
 - A mini-map at the bottom of the screen shows where you are while you scroll
 - Resize a chained window by dragging its edge and its neighbours move along
 - Close a chained window and the windows after it slide over to close the gap
-- The menu bar menu lists the chain, shows the permission status and opens Settings (`⌘,`)
+- The menu bar menu lists the chain, shows the permission status, lists the keyboard shortcuts and opens Settings (`⌘,`)
 - Settings shows the version and has a 'Start at login' checkbox
 
 The chain starts empty each time the app launches.
