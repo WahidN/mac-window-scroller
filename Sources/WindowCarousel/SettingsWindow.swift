@@ -4,8 +4,10 @@ import SwiftUI
 @MainActor
 final class SettingsWindow {
     private let window = ClosableWindow(contentRect: .zero, styleMask: [.titled, .closable], backing: .buffered, defer: true)
+    private let updates: UpdateController
 
-    init() {
+    init(updates: UpdateController) {
+        self.updates = updates
         window.title = "Settings"
         window.isReleasedWhenClosed = false
     }
@@ -13,7 +15,7 @@ final class SettingsWindow {
     func show() {
         let isFirstShow = window.contentViewController == nil
         // A fresh view reads the login item state again, it can change in System Settings
-        window.contentViewController = NSHostingController(rootView: SettingsView())
+        window.contentViewController = NSHostingController(rootView: SettingsView(updates: updates))
         if isFirstShow { window.center() }
         NSApp.activate()
         window.makeKeyAndOrderFront(nil)
@@ -33,6 +35,7 @@ private final class ClosableWindow: NSWindow {
 }
 
 private struct SettingsView: View {
+    let updates: UpdateController
     @State private var startsAtLogin = LoginItem.isEnabled
     @State private var needsApproval = LoginItem.needsApproval
     @State private var error: String?
@@ -51,6 +54,8 @@ private struct SettingsView: View {
             if let error {
                 Text(error).foregroundStyle(.red)
             }
+            Divider()
+            UpdateSection(updates: updates)
         }
         .padding(24)
         .frame(width: 300)
@@ -72,5 +77,36 @@ private struct SettingsView: View {
         }
         startsAtLogin = LoginItem.isEnabled
         needsApproval = LoginItem.needsApproval
+    }
+}
+
+private struct UpdateSection: View {
+    let updates: UpdateController
+
+    var body: some View {
+        if let release = updates.release {
+            Text("\(release.version.description) is available")
+            Button("Install and Restart") { updates.install() }
+                .disabled(updates.state == .installing)
+        }
+        switch updates.state {
+        case .checking:
+            Text("Checking…").foregroundStyle(.secondary)
+        case .upToDate:
+            Text("Window Carousel is up to date").foregroundStyle(.secondary)
+        case .checkFailed:
+            Text("Couldn't check for updates").foregroundStyle(.red)
+        case .installing:
+            Text("Installing…").foregroundStyle(.secondary)
+        case .installFailed(let message):
+            Text(message).foregroundStyle(.red)
+            Button("Open Release Page") { updates.openReleasePage() }
+        case .idle:
+            EmptyView()
+        }
+        if updates.release == nil {
+            Button("Check for Updates") { updates.check() }
+                .disabled(updates.state == .checking)
+        }
     }
 }

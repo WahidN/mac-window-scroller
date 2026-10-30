@@ -39,15 +39,13 @@ final class ThreeFingerScroll {
     fileprivate static weak var current: ThreeFingerScroll?
 
     private let chain: WindowChain
+    private let motion: StripMotion
     private let devices: CFMutableArray
     private var lastX: CGFloat?
     private var rawOffset: CGFloat = 0
     private var samples: [(time: Double, offset: CGFloat)] = []
-    private var velocity: CGFloat = 0
-    private var motionTimer: Timer?
-    private var lastTick: TimeInterval = 0
 
-    init?(chain: WindowChain) {
+    init?(chain: WindowChain, motion: StripMotion) {
         guard let framework = dlopen("/System/Library/PrivateFrameworks/MultitouchSupport.framework/MultitouchSupport", RTLD_NOW),
               let createList = dlsym(framework, "MTDeviceCreateList"),
               let registerCallback = dlsym(framework, "MTRegisterContactFrameCallback"),
@@ -58,6 +56,7 @@ final class ThreeFingerScroll {
             return nil
         }
         self.chain = chain
+        self.motion = motion
         self.devices = devices
         Self.current = self
 
@@ -77,7 +76,7 @@ final class ThreeFingerScroll {
             return
         }
         guard let previousX = lastX else {
-            stopMotion()
+            motion.stop()
             chain.refreshWidths()
             chain.showMiniMap()
             rawOffset = chain.offset
@@ -98,45 +97,10 @@ final class ThreeFingerScroll {
     private func release(at time: Double) {
         let recent = samples.filter { time - $0.time <= Self.velocityWindow }
         samples = []
-        velocity = 0
+        var velocity: CGFloat = 0
         if let first = recent.first, let last = recent.last, last.time > first.time {
             velocity = (last.offset - first.offset) / CGFloat(last.time - first.time)
         }
-        startMotion()
-    }
-
-    private func startMotion() {
-        lastTick = ProcessInfo.processInfo.systemUptime
-        motionTimer = Timer.scheduledTimer(withTimeInterval: 1.0 / 60, repeats: true) { [weak self] _ in
-            MainActor.assumeIsolated { self?.tick() }
-        }
-    }
-
-    private func stopMotion() {
-        motionTimer?.invalidate()
-        motionTimer = nil
-        velocity = 0
-    }
-
-    private func tick() {
-        let now = ProcessInfo.processInfo.systemUptime
-        let dt = CGFloat(now - lastTick)
-        lastTick = now
-
-        let maxOffset = chain.maxOffset
-        let offset = chain.offset
-        let end = min(max(offset, 0), maxOffset)
-
-        if abs(velocity) >= ScrollPhysics.minimumVelocity {
-            let next = ScrollPhysics.momentumStep(offset: offset, velocity: velocity, maxOffset: maxOffset, dt: dt)
-            velocity = next.velocity
-            chain.show(offset: next.offset)
-        } else if offset != end {
-            chain.show(offset: ScrollPhysics.springStep(offset: offset, target: end, dt: dt))
-        } else {
-            stopMotion()
-            chain.focusMostVisible()
-            chain.fadeOutMiniMap()
-        }
+        motion.start(velocity: velocity)
     }
 }
