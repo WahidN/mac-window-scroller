@@ -1,5 +1,4 @@
-import CoreGraphics
-import Foundation
+import AppKit
 
 private typealias ContactFrameCallback = @convention(c) (
     UnsafeMutableRawPointer?, UnsafeMutableRawPointer?, Int32, Double, Int32
@@ -7,6 +6,7 @@ private typealias ContactFrameCallback = @convention(c) (
 private typealias CreateDeviceList = @convention(c) () -> Unmanaged<CFMutableArray>?
 private typealias RegisterContactFrameCallback = @convention(c) (UnsafeMutableRawPointer?, ContactFrameCallback) -> Void
 private typealias StartDevice = @convention(c) (UnsafeMutableRawPointer?, Int32) -> Void
+private typealias StopDevice = @convention(c) (UnsafeMutableRawPointer?) -> Void
 
 private let touchStride = 96
 private let normalizedXOffset = 32
@@ -40,7 +40,12 @@ final class ThreeFingerScroll {
 
     private let chain: WindowChain
     private let motion: StripMotion
-    private let devices: CFMutableArray
+    private let createList: CreateDeviceList
+    private let register: RegisterContactFrameCallback
+    private let unregister: RegisterContactFrameCallback
+    private let startDevice: StartDevice
+    private let stopDevice: StopDevice
+    private var devices: CFMutableArray?
     private var lastX: CGFloat?
     private var ignoringSwipe = false
     private var rawOffset: CGFloat = 0
@@ -50,24 +55,63 @@ final class ThreeFingerScroll {
         guard let framework = dlopen("/System/Library/PrivateFrameworks/MultitouchSupport.framework/MultitouchSupport", RTLD_NOW),
               let createList = dlsym(framework, "MTDeviceCreateList"),
               let registerCallback = dlsym(framework, "MTRegisterContactFrameCallback"),
+              let unregisterCallback = dlsym(framework, "MTUnregisterContactFrameCallback"),
               let startDevice = dlsym(framework, "MTDeviceStart"),
-              let devices = unsafeBitCast(createList, to: CreateDeviceList.self)()?.takeRetainedValue()
+              let stopDevice = dlsym(framework, "MTDeviceStop")
         else {
             NSLog("Window Carousel: MultitouchSupport is not available, three-finger scrolling is off")
             return nil
         }
         self.chain = chain
         self.motion = motion
-        self.devices = devices
+        self.createList = unsafeBitCast(createList, to: CreateDeviceList.self)
+        self.register = unsafeBitCast(registerCallback, to: RegisterContactFrameCallback.self)
+        self.unregister = unsafeBitCast(unregisterCallback, to: RegisterContactFrameCallback.self)
+        self.startDevice = unsafeBitCast(startDevice, to: StartDevice.self)
+        self.stopDevice = unsafeBitCast(stopDevice, to: StopDevice.self)
         Self.current = self
+        startDevices()
+        restartDevicesAfterLockOrSleep()
+    }
 
-        let register = unsafeBitCast(registerCallback, to: RegisterContactFrameCallback.self)
-        let start = unsafeBitCast(startDevice, to: StartDevice.self)
-        for index in 0..<CFArrayGetCount(devices) {
-            let device = UnsafeMutableRawPointer(mutating: CFArrayGetValueAtIndex(devices, index))
+    private func startDevices() {
+        devices = createList()?.takeRetainedValue()
+        forEachDevice { device in
             register(device, onContactFrame)
-            start(device, 0)
+            startDevice(device, 0)
         }
+    }
+
+    private func stopDevices() {
+        forEachDevice { device in
+            unregister(device, onContactFrame)
+            stopDevice(device)
+        }
+        devices = nil
+    }
+
+    private func forEachDevice(_ body: (UnsafeMutableRawPointer?) -> Void) {
+        guard let devices else { return }
+        for index in 0..<CFArrayGetCount(devices) {
+            body(UnsafeMutableRawPointer(mutating: CFArrayGetValueAtIndex(devices, index)))
+        }
+    }
+
+    // macOS reset de trackpad bij lock en sleep, daarna sturen de oude devices niets meer
+    private func restartDevicesAfterLockOrSleep() {
+        let restart: @Sendable (Notification) -> Void = { [weak self] _ in
+            MainActor.assumeIsolated {
+                self?.stopDevices()
+                self?.startDevices()
+                self?.lastX = nil
+            }
+        }
+        DistributedNotificationCenter.default().addObserver(
+            forName: .init("com.apple.screenIsUnlocked"), object: nil, queue: .main, using: restart
+        )
+        let workspace = NSWorkspace.shared.notificationCenter
+        workspace.addObserver(forName: NSWorkspace.didWakeNotification, object: nil, queue: .main, using: restart)
+        workspace.addObserver(forName: NSWorkspace.screensDidWakeNotification, object: nil, queue: .main, using: restart)
     }
 
     fileprivate func handle(fingers: Int, x: CGFloat, time: Double) {
