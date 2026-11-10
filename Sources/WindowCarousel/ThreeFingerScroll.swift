@@ -96,14 +96,18 @@ final class ThreeFingerScroll {
         }
     }
 
+    private func restartDevices() {
+        stopDevices()
+        startDevices()
+        // Het oude device stuurt nooit meer het frame met 0 vingers, dus de strip zelf laten terugveren
+        if lastX != nil { motion.start(velocity: 0) }
+        lastX = nil
+    }
+
     // macOS reset de trackpad bij lock en sleep, daarna sturen de oude devices niets meer
     private func restartDevicesAfterLockOrSleep() {
         let restart: @Sendable (Notification) -> Void = { [weak self] _ in
-            MainActor.assumeIsolated {
-                self?.stopDevices()
-                self?.startDevices()
-                self?.lastX = nil
-            }
+            MainActor.assumeIsolated { self?.restartDevices() }
         }
         DistributedNotificationCenter.default().addObserver(
             forName: .init("com.apple.screenIsUnlocked"), object: nil, queue: .main, using: restart
